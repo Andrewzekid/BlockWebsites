@@ -76,8 +76,8 @@ function addSite(siteURL) {
                 //website is not duplicated
                 websites.push(siteURL); //add blocked websites to array
                 chrome.storage.local.set({ "blockedWebsites": websites }, () => {
-                    window.alert(`${siteURL} added to blockList!`);
-                    
+                    // window.alert(`${siteURL} added to blockList!`);
+
                 });
             };
             const removeBtns = document.querySelectorAll(".remove-btn"); //
