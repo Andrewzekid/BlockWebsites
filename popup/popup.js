@@ -17,9 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const blockedList = document.getElementById('blockedList');
     //add all websites upon loading
     chrome.storage.local.get(["blockedWebsites"], function(result) {
-        if (result.length > 0) {
+        const entries = result["blockedWebsites"]; //get all websites which have been blocked 
+        if (entries.length > 0) {
             //blockedWebsites exist
-            result.forEach((blockedURL) => {
+            entries.forEach((blockedURL) => {
+                console.log(`Adding ${blockedURL} to UI!`);
                 addSite(blockedURL);
             });
         };
@@ -42,7 +44,9 @@ function removeSite(event) {
         console.log(`Attempting to remove ${blockedSite}`)
         chrome.storage.local.get(["blockedWebsites"], function(result) {
             const websites = result["blockedWebsites"] || [];
-            let filteredWebsites = websites.filter((element) => { element.includes(blockedSite) ? false : true }); //filter list so all site names containing blockedSite are 
+            let filteredWebsites = websites.filter((element) => {
+                return !(element.includes(blockedSite));
+            }); //filter list so all site names containing blockedSite are 
             chrome.storage.local.set({ "blockedWebsites": filteredWebsites }, () => {
                 console.log(`${blockedSite} removed from blockList!`);
             })
@@ -67,18 +71,19 @@ function addSite(siteURL) {
         chrome.storage.local.get(["blockedWebsites"], function(result) {
             const websites = result["blockedWebsites"] || ["example.com"];
             //not duplicate website
+            console.log(`Addsite function: ${siteURL}, websites: ${websites}`);
             if (!(websites.includes(siteURL))) {
                 //website is not duplicated
                 websites.push(siteURL); //add blocked websites to array
                 chrome.storage.local.set({ "blockedWebsites": websites }, () => {
                     window.alert(`${siteURL} added to blockList!`);
-                    const removeBtns = document.querySelectorAll(".remove-btn");
-                    window.localStorage.setItem(siteURL, "true");
-                    removeBtns.forEach((removeBtn) => {
-                        removeBtn.addEventListener("click", removeSite);
-                    });
+                    
                 });
             };
+            const removeBtns = document.querySelectorAll(".remove-btn"); //
+            removeBtns.forEach((removeBtn) => {
+                removeBtn.addEventListener("click", removeSite);
+            }); //add remove buttons for each website
         });
     };
 };
