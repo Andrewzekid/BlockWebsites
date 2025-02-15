@@ -4,7 +4,7 @@ chrome.storage.local.get(null, function(items) {
     // 'items' is an object with all key-value pairs in storage
     const blocked = items["blockedWebsites"];
     console.log(blocked);
-    window.alert(`Entries: ${JSON.stringify(blocked)}!`);
+    // window.alert(`Entries: ${JSON.stringify(blocked)}!`);
     console.log(blocked);
     console.log("Loading in storage...");
     if (blocked) {
