@@ -10,6 +10,7 @@ function getURL(url) {
     }
 
 };
+const PASSWORD = "LETMEIN96";
 // Add new site
 document.addEventListener('DOMContentLoaded', () => {
     const siteInput = document.getElementById('siteInput');
@@ -33,7 +34,24 @@ document.addEventListener('DOMContentLoaded', () => {
         siteInput.value = "";
     });
 });
-
+function requirePassword() {
+    const modalElements = document.querySelectorAll(".modal");
+    const modalOverlay = document.querySelector(".modal-overlay");
+    const modalInput = document.querySelector(".modal-input");
+    const modalSubmit = document.querySelector(".modal-submit");
+    let allowed = false;
+    modalSubmit.addEventListener("click", (event) => {
+        if(modalInput.value.trim() === PASSWORD) {
+            //authentication passed
+            allowed = true;
+            //hide modal
+            modalElements.forEach((element) => {
+                element.classList.add("hidden");
+            });
+        }
+    });
+    return allowed;
+}
 
 function removeSite(event) {
     //Callback function passed into remove-btn event listner to remove a website

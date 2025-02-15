@@ -8,6 +8,10 @@
     <h1>Website Blocker</h1>
     <input type="text" id="siteInput" placeholder="Enter website (e.g., facebook.com)">
     <button id="addSite">Block Site</button>
+    <div id="passwordRequired" class="modal modal-overlay">
+      <input type="text" placeholder="Enter your password" class="modal modal-input" id="passwordInput" placeholder="Enter password">
+      <button id="submit" class="modal modal-submit">Submit</button>
+    </div>
     <div id="blockedList"></div>
   </div>
   <script src="popup.js"></script>
