@@ -10,7 +10,16 @@ function getURL(url) {
     }
 
 };
+//constants
 const PASSWORD = "LETMEIN96";
+
+//elements
+const blocklistContainer = document.querySelector(".container");
+const modalElements = document.querySelectorAll(".modal");
+const modalOverlay = document.querySelector(".modal-overlay");
+const modalInput = document.querySelector(".modal-input");
+const modalSubmit = document.querySelector(".modal-submit");
+const modalClose = document.querySelector(".close-btn");
 // Add new site
 document.addEventListener('DOMContentLoaded', () => {
     const siteInput = document.getElementById('siteInput');
@@ -35,10 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 function requirePassword() {
-    const modalElements = document.querySelectorAll(".modal");
-    const modalOverlay = document.querySelector(".modal-overlay");
-    const modalInput = document.querySelector(".modal-input");
-    const modalSubmit = document.querySelector(".modal-submit");
     let allowed = false;
     modalSubmit.addEventListener("click", (event) => {
         if(modalInput.value.trim() === PASSWORD) {
@@ -53,26 +58,6 @@ function requirePassword() {
     return allowed;
 }
 
-function removeSite(event) {
-    //Callback function passed into remove-btn event listner to remove a website
-    const parent = event.currentTarget.parentElement;
-    if (parent) {
-        let blockedSite = parent.getAttribute("data-site");
-        parent.remove();
-        console.log(`Attempting to remove ${blockedSite}`)
-        chrome.storage.local.get(["blockedWebsites"], function(result) {
-            const websites = result["blockedWebsites"] || [];
-            let filteredWebsites = websites.filter((element) => {
-                return !(element.includes(blockedSite));
-            }); //filter list so all site names containing blockedSite are 
-            chrome.storage.local.set({ "blockedWebsites": filteredWebsites }, () => {
-                console.log(`${blockedSite} removed from blockList!`);
-            })
-        });
-    } else {
-        throw new Error("Parent element is undefined!");
-    }
-}
 
 function addSite(siteURL) {
     if (siteURL && !(document.querySelector(`div[data-site="${siteURL}"]`))) {
@@ -105,3 +90,69 @@ function addSite(siteURL) {
         });
     };
 };
+
+function spawnBlockWindow() {
+    return new Promise((resolve, reject) => {
+        // Show the modal
+        modalOverlay.classList.remove("hidden");
+        blocklistContainer.classList.add("blur");
+        console.log("Password enter window blocked!");
+
+        // Cleanup function to remove listeners and reset UI
+        const cleanup = () => {
+            modalSubmit.removeEventListener('click', onSubmit);
+            modalClose.removeEventListener('click', onClose);
+            modalOverlay.classList.add("hidden");
+            blocklistContainer.classList.remove("blur");
+            modalInput.value = ""; // Clear input field
+        };
+
+        // Password submission handler
+        const onSubmit = () => {
+            if (modalInput.value.trim() === PASSWORD) {
+                cleanup();
+                resolve(event); // Correct password
+            } else {
+                alert('Incorrect password!'); // Optional error feedback
+            }
+        };
+
+        // Modal close handler
+        const onClose = () => {
+            cleanup();
+            reject(new Error('Modal closed without password')); // Reject on close
+        };
+
+        // Attach event listeners
+        modalSubmit.addEventListener('click', onSubmit);
+        modalClose.addEventListener('click', onClose);
+    });
+}
+
+// Update removeSite to use the promise
+function removeSite(event) {
+    const blockedSite = event.currentTarget.parentElement.getAttribute("data-site");
+    const parent = event.currentTarget.parentElement;
+    console.log(`Outer loop event target parent element: ${parent} site: ${blockedSite}`);
+    spawnBlockWindow().then(() => {
+        if (parent) {
+            parent.remove();
+            console.log(`Attempting to remove ${blockedSite}`);
+            chrome.storage.local.get(["blockedWebsites"], function(result) {
+                const websites = result["blockedWebsites"] || [];
+                let filteredWebsites = websites.filter((element) => {
+                    return !element.includes(blockedSite);
+                });
+                chrome.storage.local.set({ "blockedWebsites": filteredWebsites }, () => {
+                    console.log(`${blockedSite} removed from blockList!`);
+                });
+            });
+        }
+    }).catch((error) => {
+        console.log('Removal cancelled:', error.message);
+    });
+}
+
+// Remove the original modalClose event listener to prevent conflicts
+// modalClose.removeEventListener("click", originalCloseHandler); // If reference exists
+// Or comment out the original modalClose listener in the code
