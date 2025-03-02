@@ -1,16 +1,42 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-  <title>Options</title>
-  <link rel="stylesheet" href="../popup/styles.css">
+    <title>Options</title>
+    <link rel="stylesheet" href="../popup/styles.css">
+
 </head>
+
 <body>
-  <div class="container">
-    <h1>Settings</h1>
-    <label>Redirect URL:</label>
-    <input type="url" id="redirectUrl" placeholder="https://outlook.com">
-    <button id="saveSettings">Save</button>
-  </div>
-  <script src="options.js"></script>
+    <div class="container">
+
+        <h1>Settings</h1>
+        <label>Redirect URL:</label>
+        <input type="url" id="redirectUrl" placeholder="https://outlook.com">
+        <!-- Add to options.html -->
+        <div class="option-row">
+            <label for="strictMode">Strict Mode:</label>
+            <div class="toggle-container">
+                <input type="checkbox" id="strictMode" class="toggle-input">
+                <label for="strictMode" class="toggle-label"></label>
+            </div>
+            <p class="option-description">When enabled, prevents disabling or removing the extension</p>
+        </div>
+        <label>Password:</label>
+        <input type="password" id="passwordInput" placeholder="Enter new password">
+
+        <h2>Keyword Blocking</h2>
+        <p>Block any URL containing these keywords:</p>
+        <div class="keyword-container">
+            <input type="text" id="keywordInput" placeholder="Enter keyword (e.g., gambling)">
+            <button id="addKeyword">Add Keyword</button>
+            <div id="keywordList"></div>
+        </div>
+
+        <button id="saveSettings">Save</button>
+        <div id="statusMessage"></div>
+    </div>
+    <script src="options.js" type="module"></script>
 </body>
+
 </html>

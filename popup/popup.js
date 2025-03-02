@@ -1,3 +1,7 @@
+// const bcrypt = require("bcrypt");
+const saltRounds = 10;
+import { comparePassword } from '../utils/crypto-utils.js';
+
 function getURL(url) {
     //Given a url such as https://www.youtube.com, return youtube.com
     if (url.includes("https://") || url.includes("http://")) {
@@ -8,10 +12,18 @@ function getURL(url) {
     } else {
         return url;
     }
+}
 
-};
-//constants
-const PASSWORD = "LETMEIN96";
+// Update getPassword function to only use hashedPassword
+function getPassword(callback) {
+    // This function now only checks if a password exists
+    // It doesn't return the actual password since we only store hashes
+    chrome.storage.local.get(['hashedPassword'], (data) => {
+        // Return a boolean indicating if password protection is enabled
+        const hasPassword = !!data.hashedPassword;
+        callback(hasPassword);
+    });
+}
 
 //elements
 const blocklistContainer = document.querySelector(".container");
@@ -27,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const blockedList = document.getElementById('blockedList');
     //add all websites upon loading
     chrome.storage.local.get(["blockedWebsites"], function(result) {
-        const entries = result["blockedWebsites"]; //get all websites which have been blocked 
+        const entries = result["blockedWebsites"] || []; //get all websites which have been blocked 
         if (entries.length > 0) {
             //blockedWebsites exist
             entries.forEach((blockedURL) => {
@@ -42,29 +54,129 @@ document.addEventListener('DOMContentLoaded', () => {
         addSite(siteURL);
         siteInput.value = "";
     });
-});
 
-function requirePassword() {
-    let allowed = false;
-    console.log("Initializing password verificaiton!");
-    modalSubmit.addEventListener("click", (event) => {
-        if (modalInput.value.trim() === PASSWORD) {
-            //authentication passed
-            allowed = true;
-            //hide modal
-            modalElements.forEach((element) => {
-                element.classList.add("hidden");
+    // Add a section for keywords in the popup HTML
+    const keywordSection = document.createElement('div');
+    keywordSection.innerHTML = `
+        <h2>Blocked Keywords</h2>
+        <input type="text" id="keywordInput" placeholder="Enter keyword (e.g., gambling)">
+        <button id="addKeyword">Block Keyword</button>
+        <div id="keywordList"></div>
+    `;
+    blocklistContainer.appendChild(keywordSection);
 
+    const keywordInput = document.getElementById('keywordInput');
+    const addKeywordButton = document.getElementById('addKeyword');
+    const keywordList = document.getElementById('keywordList');
+
+    // Load and display keywords
+    chrome.storage.local.get(["blockedKeywords"], function(result) {
+        const keywords = result["blockedKeywords"] || [];
+        if (keywords.length > 0) {
+            keywords.forEach((keyword) => {
+                addKeywordToUI(keyword);
             });
-            document.body.classList.remove("blur");
-            throw new Error("Checkpoint 2: Password correct, modal hidden");
-        } else {
-            console.error("PASSWORD INCORRECT");
         }
     });
+
+    // Add keyword button handler
+    addKeywordButton.addEventListener("click", () => {
+        const keyword = keywordInput.value.trim().toLowerCase();
+        if (keyword) {
+            addKeywordToUI(keyword);
+            keywordInput.value = "";
+
+            // Save to storage
+            chrome.storage.local.get(["blockedKeywords"], function(result) {
+                const keywords = result["blockedKeywords"] || [];
+                if (!keywords.includes(keyword)) {
+                    keywords.push(keyword);
+                    chrome.storage.local.set({ "blockedKeywords": keywords }, () => {
+                        console.log(`Keyword "${keyword}" added to block list!`);
+                    });
+                }
+            });
+        }
+    });
+
+    function addKeywordToUI(keyword) {
+        if (!document.querySelector(`div[data-keyword="${keyword}"]`)) {
+            keywordList.innerHTML += `<div data-keyword='${keyword}' class='site-item'>${keyword}<button class='remove-keyword-btn'>Remove</button></div>`;
+
+            // Add event listeners to new remove buttons
+            const removeButtons = document.querySelectorAll('.remove-keyword-btn');
+            removeButtons.forEach((btn) => {
+                if (!btn.hasListener) {
+                    btn.addEventListener("click", removeKeyword);
+                    btn.hasListener = true;
+                }
+            });
+        }
+    }
+
+    function removeKeyword(event) {
+        const keywordElement = event.currentTarget.parentElement;
+        const keyword = keywordElement.getAttribute("data-keyword");
+
+        spawnBlockWindow().then(() => {
+            keywordElement.remove();
+
+            chrome.storage.local.get(["blockedKeywords"], function(result) {
+                const keywords = result["blockedKeywords"] || [];
+                const filteredKeywords = keywords.filter(k => k !== keyword);
+                chrome.storage.local.set({ "blockedKeywords": filteredKeywords }, () => {
+                    console.log(`Keyword "${keyword}" removed from block list!`);
+                });
+            });
+        }).catch((error) => {
+            console.log('Keyword removal cancelled:', error.message);
+        });
+    }
+
+    // Add event listener for the options button
+    const optionsButton = document.getElementById('openOptions');
+    if (optionsButton) {
+        optionsButton.addEventListener('click', () => {
+            // Open the options page
+            if (chrome.runtime.openOptionsPage) {
+                // New way to open options pages, if supported (Chrome 42+)
+                chrome.runtime.openOptionsPage();
+            } else {
+                // Fallback for older Chrome versions
+                window.open(chrome.runtime.getURL('options/options.html'));
+            }
+        });
+    }
+});
+
+// Update the requirePassword function
+function requirePassword() {
+    let allowed = false;
+    console.log("Initializing password verification!");
+
+    modalSubmit.addEventListener("click", (event) => {
+        verifyPassword(modalInput.value.trim())
+            .then(isCorrect => {
+                if (isCorrect) {
+                    //authentication passed
+                    allowed = true;
+                    //hide modal
+                    modalElements.forEach((element) => {
+                        element.classList.add("hidden");
+                    });
+                    document.body.classList.remove("blur");
+                    throw new Error("Checkpoint 2: Password correct, modal hidden");
+                } else {
+                    console.error("PASSWORD INCORRECT");
+                }
+            })
+            .catch(error => {
+                console.error("Password verification error:", error);
+            });
+    });
+
     return allowed;
 }
-
 
 function addSite(siteURL) {
     if (siteURL && !(document.querySelector(`div[data-site="${siteURL}"]`))) {
@@ -99,41 +211,57 @@ function addSite(siteURL) {
     };
 };
 
+// Update spawnBlockWindow function
 function spawnBlockWindow() {
     return new Promise((resolve, reject) => {
-        // Show the modal
-        modalOverlay.classList.remove("hidden");
-        blocklistContainer.classList.add("blur");
-        console.log("Password enter window blocked!");
-
-        // Cleanup function to remove listeners and reset UI
-        const cleanup = () => {
-            modalSubmit.removeEventListener('click', onSubmit);
-            modalClose.removeEventListener('click', onClose);
-            modalOverlay.classList.add("hidden");
-            blocklistContainer.classList.remove("blur");
-            modalInput.value = ""; // Clear input field
-        };
-
-        // Password submission handler
-        const onSubmit = () => {
-            if (modalInput.value.trim() === PASSWORD) {
-                cleanup();
-                resolve(event); // Correct password
+        //check if password protection is enabled
+        getPassword((hasPassword) => {
+            //if no password protection, then don't block
+            if (!hasPassword) {
+                resolve(); //don't block
             } else {
-                alert('Incorrect password!'); // Optional error feedback
+                // Show the modal
+                modalOverlay.classList.remove("hidden");
+                blocklistContainer.classList.add("blur");
+                console.log("Password enter window blocked!");
+
+                // Cleanup function to remove listeners and reset UI
+                const cleanup = () => {
+                    modalSubmit.removeEventListener('click', onSubmit);
+                    modalClose.removeEventListener('click', onClose);
+                    modalOverlay.classList.add("hidden");
+                    blocklistContainer.classList.remove("blur");
+                    modalInput.value = ""; // Clear input field
+                };
+
+                // Password submission handler
+                const onSubmit = () => {
+                    verifyPassword(modalInput.value.trim())
+                        .then(isCorrect => {
+                            if (isCorrect) {
+                                cleanup();
+                                resolve(event); // Correct password
+                            } else {
+                                alert('Incorrect password!'); // Optional error feedback
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Password verification error:", error);
+                            alert('An error occurred during password verification');
+                        });
+                };
+
+                // Add event listeners
+                modalSubmit.addEventListener('click', onSubmit);
+                modalClose.addEventListener('click', onClose);
+
+                // Close button handler
+                function onClose() {
+                    cleanup();
+                    reject(new Error('Password entry cancelled'));
+                }
             }
-        };
-
-        // Modal close handler
-        const onClose = () => {
-            cleanup();
-            reject(new Error('Modal closed without password')); // Reject on close
-        };
-
-        // Attach event listeners
-        modalSubmit.addEventListener('click', onSubmit);
-        modalClose.addEventListener('click', onClose);
+        });
     });
 }
 
@@ -164,3 +292,57 @@ function removeSite(event) {
 // Remove the original modalClose event listener to prevent conflicts
 // modalClose.removeEventListener("click", originalCloseHandler); // If reference exists
 // Or comment out the original modalClose listener in the code
+
+// Update verifyPassword function
+function verifyPassword(inputPassword) {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.get(['hashedPassword'], async(data) => {
+            try {
+                // Check if we have a hashed password
+                if (data.hashedPassword) {
+                    // Use Web Crypto API to compare
+                    const isMatch = await comparePassword(inputPassword, data.hashedPassword);
+                    resolve(isMatch);
+                } else {
+                    // No password set
+                    resolve(inputPassword === "");
+                }
+            } catch (err) {
+                console.error("Error comparing passwords:", err);
+                reject(err);
+            }
+        });
+    });
+}
+
+function checkStrictModeStatus(callback) {
+    chrome.storage.local.get(['strictMode'], (data) => {
+        callback(!!data.strictMode);
+    });
+}
+
+// Modify the openOptions event listener to check for strict mode
+document.getElementById('openOptions').addEventListener('click', () => {
+    checkStrictModeStatus((isStrictModeEnabled) => {
+        if (isStrictModeEnabled) {
+            // If strict mode is enabled, require password verification
+            spawnBlockWindow().then(() => {
+                // Password verified, open options page
+                if (chrome.runtime.openOptionsPage) {
+                    chrome.runtime.openOptionsPage();
+                } else {
+                    window.open(chrome.runtime.getURL('options/options.html'));
+                }
+            }).catch((error) => {
+                console.log('Options page access cancelled:', error.message);
+            });
+        } else {
+            // No strict mode, open options directly
+            if (chrome.runtime.openOptionsPage) {
+                chrome.runtime.openOptionsPage();
+            } else {
+                window.open(chrome.runtime.getURL('options/options.html'));
+            }
+        }
+    });
+});

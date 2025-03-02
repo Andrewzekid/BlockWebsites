@@ -3,12 +3,16 @@
 
 <head>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/solid.min.js" integrity="sha512-H/FYzgm63CLJLwSgCNv7zmAHWnbw7GwOrnCjE15CD969yHWj7fGDiHHLZuZJLO9ZGIkBR/JL91/p/ddbtUUgQQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+
 </head>
 
 <body class="">
     <div class="container">
-        <h1>Website Blocker</h1>
+        <div class="header">
+            <h1>Website Blocker</h1>
+            <button id="openOptions" class="options-button">Settings</button>
+        </div>
         <input type="text" id="siteInput" placeholder="Enter website (e.g., facebook.com)">
         <button id="addSite">Block Site</button>
 
@@ -19,12 +23,12 @@
             <span class="close-btn">&times;</span>
             <h3 class="">Enter your Password </h3>
             <div class="passwordContainer">
-                <input type="text" placeholder="Enter your password" class=" modal-input" id="passwordInput" placeholder="Enter password">
+                <input type="text" placeholder="Enter your password" class="modal-input" id="passwordInput" placeholder="Enter password">
                 <button id="submit" class="modal-submit">Submit</button>
             </div>
         </div>
     </div>
-    <script src="popup.js"></script>
+    <script src="popup.js" type="module"></script>
 </body>
 
 </html>

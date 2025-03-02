@@ -1,17 +1,23 @@
 {
     "manifest_version": 3,
-    "name": "WebBlock",
+    "name": "Web Blocker",
     "version": "1.0",
+    "description": "Block websites and redirect",
     "permissions": [
+        "storage",
         "tabs",
-        "scripting",
-        "storage"
+        "scripting"
     ],
     "host_permissions": [
         "<all_urls>"
     ],
+    "web_accessible_resources": [{
+        "resources": ["utils/crypto-utils.js"],
+        "matches": ["<all_urls>"]
+    }],
     "background": {
-        "service_worker": "background.js"
+        "service_worker": "background.js",
+        "type": "module"
     },
     "content_scripts": [{
         "matches": ["<all_urls>"],
@@ -20,5 +26,10 @@
     }],
     "action": {
         "default_popup": "popup/popup.html"
+    },
+    "options_page": "options/options.html",
+    "options_ui": {
+        "page": "options/options.html",
+        "open_in_tab": true
     }
 }
