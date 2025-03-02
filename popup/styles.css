@@ -9,76 +9,54 @@ body {
     flex-direction: column;
     gap: 10px;
   }
+  
+#passwordRequired {
+  display: hidden;
+  
+}
 
-  .modal-overlay {
-    position: fixed;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: rgba(0,0,0,0.5);
-    padding: 16px;
-    top: 0;
-    z-index: 1000;
-    right: 0;
-    bottom: 0;
-    left: 0;
-  }
+.container.blur > *:not(.modal) {
+  filter: blur(5px);
+}
 
-  .modal h3 {
-    align-self: center;
-  }
+/* .modal-overlay > * {
+  filter: none;
+} */
 
-  .modal {
-    display: flex;
-    min-width: 250px;
-    flex-direction: column;
-    justify-content: space-around;
-    background: white; 
-    border-radius: 8px;
-    padding: 8px;
-    gap: 15px;
-  }
+.hidden {
+  display: none;
+}
 
-  .close-btn {
-    background: none;
-    font-size: 1.5em;
-    border: none;
-    color: black;
-    cursor: pointer;
-  }
+.modal-overlay {
+  z-index: 1000;
+  border-radius: 4px;
+  border: none;
+  background-color: rgba(255, 255, 255, 0.1);
+  box-shadow: rgba(0,0,0,0.5);
+  position: fixed;
+  top:0;
+  left:0;
+  min-width: 300px; 
+  min-height: 300px;
+  width: 100%;
+  height: 100%;
+}
 
-  .modal-input {
-    width: 100px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    padding: 0.5rem;
+.close-btn {
+  align-self: flex-end;
+  min-width: 16px;
+  min-height: 16px;
+  cursor: pointer;
+}
 
-  }
-
-  .modal .header {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px;
-    align-items: center;
-    gap: 20px;
-  }
-
-  .modal-submit {
-    background: #4285f4;
-    color: white;
-    padding: 10px;
-    border-radius: 8px;
-    border: none;
-  }
-
-  .hidden {
-    display: none !important;
-  }
-
-  body.blur > *:not(.modal-overlay) {
-    filter: blur(5px);
-  }
-
+.modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 0.5rem;
+  justify-content: center;
+}
   input {
     padding: 8px;
     border: 1px solid #ccc;
