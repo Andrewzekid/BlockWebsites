@@ -22,6 +22,17 @@ document.addEventListener('DOMContentLoaded', () => {
         displayKeywords();
     });
 
+    function checkStrictMode() {
+        //checks if strictMode is 
+        let strictMode = false;
+        chrome.storage.local.get(["strictMode"], (data) => {
+            if (data.strictMode) {
+                strictMode = !!data.strictMode;
+            };
+        });
+        return strictMode;
+    }
+
     // Function to display keywords in the UI
     function displayKeywords() {
         keywordList.innerHTML = '';
@@ -61,20 +72,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Only update password if a new one was entered
         if (passwordInput.value.trim() !== '') {
-            // Use Web Crypto API to hash the password
-            hashPassword(passwordInput.value.trim())
-                .then(hash => {
-                    // Store the hashed password
-                    newSettings.hashedPassword = hash;
+            //check if strict mode is active
+            let strictMode = checkStrictMode();
+            if (strictMode === true) {
+                //send an error message
+                statusMessage.textContent = "Cannot reset password in strict mode!";
+                statusMessage.style.color = "red";
+            } else {
+                // Use Web Crypto API to hash the password
+                hashPassword(passwordInput.value.trim())
+                    .then(hash => {
+                        // Store the hashed password
+                        newSettings.hashedPassword = hash;
 
-                    // Save settings with the hashed password
-                    saveSettingsToStorage(newSettings);
-                })
-                .catch(err => {
-                    console.error("Error hashing password:", err);
-                    statusMessage.textContent = 'Error saving password!';
-                    statusMessage.style.color = 'red';
-                });
+                        // Save settings with the hashed password
+                        saveSettingsToStorage(newSettings);
+                    })
+                    .catch(err => {
+                        console.error("Error hashing password:", err);
+                        statusMessage.textContent = 'Error saving password!';
+                        statusMessage.style.color = 'red';
+                    });
+            }
+
         } else {
             // No password change, just save other settings
             saveSettingsToStorage(newSettings);
